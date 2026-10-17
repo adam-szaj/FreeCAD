@@ -101,8 +101,6 @@ SketchSolveStatus SketchObject::solve(bool updateGeoAfterSolving /*=true*/)
     // line OverConstrained: a conflicting constraint when all other DoF are already constrained (it
     // has more constraints than parameters and the extra constraints are not redundant)
 
-    solverNeedsUpdate = false;
-
     retrieveSolverDiagnostics();
 
     lastSolveTime = 0.0;
@@ -177,6 +175,7 @@ SketchSolveStatus SketchObject::solve(bool updateGeoAfterSolving /*=true*/)
         }
     }
 
+    solverNeedsUpdate = false;
     signalSolverUpdate();
 
     return status;
@@ -781,6 +780,7 @@ int SketchObject::setUpSketch()
         || lastHasPartialRedundancies)
         Constraints.touch();
 
+    solverNeedsUpdate = false;
     return lastDoF;
 }
 

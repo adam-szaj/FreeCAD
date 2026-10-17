@@ -15,6 +15,97 @@
 
 using namespace SketcherTestHelpers;
 
+namespace
+{
+int addHorizontalLineGeometry(Sketcher::SketchObject* sketch, double y = 0.0)
+{
+    constexpr double lineLength = 10.0;
+    Part::GeomLineSegment line;
+    line.setPoints(Base::Vector3d(0, y, 0), Base::Vector3d(lineLength, y, 0));
+    return sketch->addGeometry(&line);
+}
+}  // namespace
+
+TEST_F(SketchObjectTest, testDeletedConstraintIsNotUsedWhenMoving)
+{
+    auto* sketch = getObject();
+    int geoId = addHorizontalLineGeometry(sketch);
+    Sketcher::Constraint constraint;
+    constraint.Type = Sketcher::Horizontal;
+    constraint.First = geoId;
+    sketch->addConstraint(&constraint);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+
+    ASSERT_EQ(sketch->delConstraint(0), 0);
+    ASSERT_EQ(
+        sketch->moveGeometry(geoId, Sketcher::PointPos::start, Base::Vector3d(0, 2, 0)),
+        Sketcher::SketchSolveStatus::Success
+    );
+
+    EXPECT_EQ(sketch->Constraints.getSize(), 0);
+    EXPECT_NEAR(sketch->getPoint(geoId, Sketcher::PointPos::end).y, 0.0, 1e-7);
+}
+
+TEST_F(SketchObjectTest, testDeletedReferenceConstraintIsNotWrittenWhenMoving)
+{
+    auto* sketch = getObject();
+    int geoId = addHorizontalLineGeometry(sketch);
+    Sketcher::Constraint constraint;
+    constraint.Type = Sketcher::Distance;
+    constraint.First = geoId;
+    constraint.isDriving = false;
+    sketch->addConstraint(&constraint);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+
+    ASSERT_EQ(sketch->delConstraint(0), 0);
+    ASSERT_EQ(
+        sketch->moveGeometry(geoId, Sketcher::PointPos::start, Base::Vector3d(0, 2, 0)),
+        Sketcher::SketchSolveStatus::Success
+    );
+
+    EXPECT_EQ(sketch->Constraints.getSize(), 0);
+    EXPECT_NEAR(sketch->getPoint(geoId, Sketcher::PointPos::end).y, 0.0, 1e-7);
+}
+
+TEST_F(SketchObjectTest, testDeletedConstraintIsNotUsedWhenDraggingWithoutSolve)
+{
+    auto* sketch = getObject();
+    int geoId = addHorizontalLineGeometry(sketch);
+    Sketcher::Constraint constraint;
+    constraint.Type = Sketcher::Horizontal;
+    constraint.First = geoId;
+    sketch->addConstraint(&constraint);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+    sketch->noRecomputes = true;
+
+    ASSERT_EQ(sketch->delConstraint(0, Sketcher::DeleteOption::NoSolve), 0);
+    ASSERT_EQ(sketch->initTemporaryMove(geoId, Sketcher::PointPos::start), 0);
+    ASSERT_EQ(
+        sketch->moveGeometryTemporary(geoId, Sketcher::PointPos::start, Base::Vector3d(0, 2, 0)),
+        GCS::SolveStatus::Success
+    );
+
+    EXPECT_NEAR(sketch->getSolvedSketch().getPoint(geoId, Sketcher::PointPos::end).y, 0.0, 1e-7);
+}
+
+TEST_F(SketchObjectTest, testMovingAfterDeletionDoesNotRestoreDeletedGeometry)
+{
+    constexpr double survivingLineY = 5.0;
+    auto* sketch = getObject();
+    addHorizontalLineGeometry(sketch);
+    addHorizontalLineGeometry(sketch, survivingLineY);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+
+    ASSERT_EQ(sketch->delGeometry(0), 0);
+    ASSERT_EQ(
+        sketch->moveGeometry(0, Sketcher::PointPos::start, Base::Vector3d(0, 7, 0)),
+        Sketcher::SketchSolveStatus::Success
+    );
+
+    EXPECT_EQ(sketch->Geometry.getSize(), 1);
+    EXPECT_NEAR(sketch->getPoint(0, Sketcher::PointPos::end).y, survivingLineY, 1e-7);
+}
+
 TEST_F(SketchObjectTest, testAddExternalIncreasesCount)
 {
     // Arrange

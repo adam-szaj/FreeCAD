@@ -91,6 +91,7 @@ SketchSolveStatus SketchObject::moveGeometries(
         for (auto* geo : geomlist) {
             delete geo;
         }
+        solverNeedsUpdate = false;
     }
 
     solvedSketch.resetInitMove();  // reset solver point moving mechanism
