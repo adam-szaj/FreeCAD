@@ -213,8 +213,11 @@ SketchSolveStatus SketchObject::setDatum(int ConstrId, double Datum)
 
     const auto status = solve();
 
-    if (status != SketchSolveStatus::Success)
+    if (status != SketchSolveStatus::Success) {
         this->Constraints.getValues()[ConstrId]->setValue(oldDatum);// newVals is a shell now
+        // The solver still contains the rejected datum.
+        solverNeedsUpdate = true;
+    }
 
     return status;
 }
