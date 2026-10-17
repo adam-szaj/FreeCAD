@@ -336,7 +336,11 @@ int SketchObject::delGeometriesExclusiveList(const std::vector<int>& GeoIds, Del
     constraints.erase(std::remove_if(constraints.begin(),
                                      constraints.end(),
                                      [](const auto& constr) {
-                                         return constr->Type == ConstraintType::None;
+                                         if (constr->Type == ConstraintType::None) {
+                                             delete constr;
+                                             return true;
+                                         }
+                                         return false;
                                      }),
                       constraints.end());
 
