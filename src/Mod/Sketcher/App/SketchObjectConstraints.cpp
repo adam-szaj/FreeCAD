@@ -787,6 +787,9 @@ int SketchObject::setUpSketch()
 int SketchObject::diagnoseAdditionalConstraints(
     std::vector<Sketcher::Constraint*> additionalconstraints)
 {
+    // Diagnosis borrows caller-owned constraints which may not outlive this call.
+    solverNeedsUpdate = true;
+
     auto objectconstraints = Constraints.getValues();
 
     std::vector<Sketcher::Constraint*> allconstraints;
