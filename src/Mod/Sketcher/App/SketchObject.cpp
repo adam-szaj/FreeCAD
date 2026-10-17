@@ -1122,6 +1122,9 @@ void SketchObject::onGeometryChanged()
 
 void SketchObject::onConstraintsChanged()
 {
+    // The solver borrows constraint pointers that this update may replace or delete.
+    solverNeedsUpdate = true;
+
     auto doc = getDocument();
 
     if (doc && doc->isPerformingTransaction()) {
