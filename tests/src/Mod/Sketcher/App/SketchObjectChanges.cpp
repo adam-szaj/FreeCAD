@@ -147,6 +147,42 @@ TEST_F(SketchObjectTest, testDeletingDuplicateConstraintIdsPreservesOtherConstra
     EXPECT_EQ(sketch->Constraints[0]->First, firstGeoId);
 }
 
+TEST_F(SketchObjectTest, testRejectedDatumDoesNotPreventMoving)
+{
+    constexpr double horizontalSpan = 8.0;
+    constexpr double verticalSpan = 6.0;
+    constexpr double lineLength = 10.0;
+    constexpr double impossibleSpan = 11.0;
+    auto* sketch = getObject();
+    Part::GeomLineSegment line;
+    line.setPoints(Base::Vector3d(0, 0, 0), Base::Vector3d(horizontalSpan, verticalSpan, 0));
+    int geoId = sketch->addGeometry(&line);
+
+    Sketcher::Constraint horizontalDistance;
+    horizontalDistance.Type = Sketcher::DistanceX;
+    horizontalDistance.First = geoId;
+    horizontalDistance.FirstPos = Sketcher::PointPos::start;
+    horizontalDistance.Second = geoId;
+    horizontalDistance.SecondPos = Sketcher::PointPos::end;
+    horizontalDistance.setValue(horizontalSpan);
+    int constraintId = sketch->addConstraint(&horizontalDistance);
+    Sketcher::Constraint length;
+    length.Type = Sketcher::Distance;
+    length.First = geoId;
+    length.setValue(lineLength);
+    sketch->addConstraint(&length);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+
+    ASSERT_NE(sketch->setDatum(constraintId, impossibleSpan), Sketcher::SketchSolveStatus::Success);
+    EXPECT_DOUBLE_EQ(sketch->getDatum(constraintId), horizontalSpan);
+    ASSERT_EQ(
+        sketch->moveGeometry(geoId, Sketcher::PointPos::start, Base::Vector3d(0, 2, 0)),
+        Sketcher::SketchSolveStatus::Success
+    );
+
+    EXPECT_NEAR(sketch->getPoint(geoId, Sketcher::PointPos::end).y, verticalSpan + 2, 1e-7);
+}
+
 TEST_F(SketchObjectTest, testAddExternalIncreasesCount)
 {
     // Arrange
