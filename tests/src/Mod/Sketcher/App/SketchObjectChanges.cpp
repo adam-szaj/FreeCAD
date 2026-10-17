@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 #include <gtest/gtest.h>
+#include <memory>
 
 #include <FCConfig.h>
 
@@ -104,6 +105,27 @@ TEST_F(SketchObjectTest, testMovingAfterDeletionDoesNotRestoreDeletedGeometry)
 
     EXPECT_EQ(sketch->Geometry.getSize(), 1);
     EXPECT_NEAR(sketch->getPoint(0, Sketcher::PointPos::end).y, survivingLineY, 1e-7);
+}
+
+TEST_F(SketchObjectTest, testTemporaryDiagnosisConstraintsAreNotUsedWhenMoving)
+{
+    auto* sketch = getObject();
+    int geoId = addHorizontalLineGeometry(sketch);
+    ASSERT_EQ(sketch->solve(), Sketcher::SketchSolveStatus::Success);
+    {
+        auto constraint = std::make_unique<Sketcher::Constraint>();
+        constraint->Type = Sketcher::Horizontal;
+        constraint->First = geoId;
+        sketch->diagnoseAdditionalConstraints({constraint.get()});
+    }
+
+    ASSERT_EQ(
+        sketch->moveGeometry(geoId, Sketcher::PointPos::start, Base::Vector3d(0, 2, 0)),
+        Sketcher::SketchSolveStatus::Success
+    );
+
+    EXPECT_EQ(sketch->Constraints.getSize(), 0);
+    EXPECT_NEAR(sketch->getPoint(geoId, Sketcher::PointPos::end).y, 0.0, 1e-7);
 }
 
 TEST_F(SketchObjectTest, testAddExternalIncreasesCount)
