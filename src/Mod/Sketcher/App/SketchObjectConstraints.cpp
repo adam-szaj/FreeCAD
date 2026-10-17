@@ -1001,6 +1001,7 @@ int SketchObject::delConstraints(std::vector<int> ConstrIds, DeleteOptions optio
     std::vector<Constraint*> newVals(vals);
 
     std::sort(ConstrIds.begin(), ConstrIds.end());
+    ConstrIds.erase(std::unique(ConstrIds.begin(), ConstrIds.end()), ConstrIds.end());
 
     if (ConstrIds.front() < 0 || ConstrIds.back() >= int(vals.size()))
         return -1;

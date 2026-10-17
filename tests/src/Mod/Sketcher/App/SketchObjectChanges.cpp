@@ -128,6 +128,25 @@ TEST_F(SketchObjectTest, testTemporaryDiagnosisConstraintsAreNotUsedWhenMoving)
     EXPECT_NEAR(sketch->getPoint(geoId, Sketcher::PointPos::end).y, 0.0, 1e-7);
 }
 
+TEST_F(SketchObjectTest, testDeletingDuplicateConstraintIdsPreservesOtherConstraints)
+{
+    constexpr double secondLineY = 5.0;
+    auto* sketch = getObject();
+    int firstGeoId = addHorizontalLineGeometry(sketch);
+    int secondGeoId = addHorizontalLineGeometry(sketch, secondLineY);
+    Sketcher::Constraint constraint;
+    constraint.Type = Sketcher::Horizontal;
+    constraint.First = firstGeoId;
+    sketch->addConstraint(&constraint);
+    constraint.First = secondGeoId;
+    sketch->addConstraint(&constraint);
+
+    ASSERT_EQ(sketch->delConstraints({1, 1}), 0);
+
+    ASSERT_EQ(sketch->Constraints.getSize(), 1);
+    EXPECT_EQ(sketch->Constraints[0]->First, firstGeoId);
+}
+
 TEST_F(SketchObjectTest, testAddExternalIncreasesCount)
 {
     // Arrange
