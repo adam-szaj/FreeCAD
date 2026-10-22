@@ -951,7 +951,7 @@ void StatefulLabel::OnChange(Base::Subject<const char*>& rCaller, const char* rc
     else {
         for (const auto& state : _availableStates) {
             if (state.second.preferenceString == changedItem) {
-                _styleCache.erase(_styleCache.find(state.first));
+                _styleCache.erase(state.first);
             }
         }
     }

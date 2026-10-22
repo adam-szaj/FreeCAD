@@ -49,3 +49,6 @@ target_link_libraries(Gui_tests_run PRIVATE
 if(WIN32)
     target_compile_definitions(Gui_tests_run PRIVATE QUARTER_DLL)
 endif()
+
+setup_qt_test(StatefulLabel)
+set_tests_properties(StatefulLabel_Tests_run PROPERTIES TIMEOUT 30)
