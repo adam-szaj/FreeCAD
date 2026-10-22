@@ -2276,6 +2276,34 @@ TEST_F(TopoShapeExpansionTest, makeElementCut)
     ));
 }
 
+#if defined(__GNUC__) && defined(FC_OS_LINUX)
+// OCCT 7.8.1 and 7.9.2 dereference a null edge in IntersectMoreCorner for this valid solid.
+// The chamfer signal guard must turn that kernel failure into an exception, not terminate FreeCAD.
+TEST_F(TopoShapeExpansionTest, makeElementChamferRejectsThreadedCornerWithoutCrashing)  // NOLINT
+{
+    const std::string path = App::Application::getHomePath()
+        + "/tests/brepfiles/threadedChamferFailure.brep";
+    for (const auto& edgeIds : {std::vector<int> {26}, std::vector<int> {26, 25}}) {
+        SCOPED_TRACE(edgeIds.size());
+        TopoDS_Shape threadedShape;
+        BRep_Builder builder;
+        ASSERT_TRUE(BRepTools::Read(threadedShape, path.c_str(), builder));
+        TopoShape threaded {threadedShape, 1L};
+        ASSERT_TRUE(threaded.isValid());
+        std::vector<TopoShape> edges;
+        for (int id : edgeIds) {
+            edges.push_back(threaded.getSubTopoShape(TopAbs_EDGE, id));
+        }
+
+        TopoShape result;
+        EXPECT_THROW(
+            result.makeElementChamfer(threaded, edges, Part::ChamferType::equalDistance, 2.0, 2.0),
+            Standard_Failure
+        );
+    }
+}
+#endif
+
 TEST_F(TopoShapeExpansionTest, makeElementChamfer)
 {
     // Arrange
